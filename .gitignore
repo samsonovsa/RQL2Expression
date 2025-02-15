@@ -288,3 +288,4 @@ __pycache__/
 
 # Directory build props backup
 /Directory.Build.props.bak
+/postgres_data

@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "Docker Compose": {
+      "commandName": "DockerCompose",
+      "composeLaunchServiceName": "rql2expression",
+      "launchBrowser": true,
+      "composeLaunchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/swagger/index.html",
+      "commandVersion": "1.0",
+      "serviceActions": {
+        "db": "StartWithoutDebugging",
+        "rql2expression": "StartDebugging"
+      }
+    }
+  }
+}
