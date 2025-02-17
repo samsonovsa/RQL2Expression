@@ -19,21 +19,12 @@ namespace RQL2Expression.Core.Service
         /// </summary>
         /// <param name="rql">RQL-запрос.</param>
         /// <returns>Выражение для фильтрации.</returns>
-        public Expression<Func<Account, bool>> ParseRqlToExpression(string rql)
+        public Expression<Func<Account, bool>> ParseRqlToExpression(string rql, ParameterExpression parameter = null)
         {
-            var parameter = Expression.Parameter(typeof(Account), "a");
+            parameter = parameter ?? Expression.Parameter(typeof(Account), "a");
 
-            // Удаляем пробелы и переносы строк для упрощения обработки
             rql = rql.Replace(" ", string.Empty).Replace("\n", string.Empty);
 
-            // Обработка оператора limit (не влияет на дерево выражений, но может быть использован для Take)
-            if (rql.Contains("limit("))
-            {
-                var limitValue = GetLimitValue(rql);
-                // Обработка limit (например, можно сохранить значение для использования в Take)
-            }
-
-            // Обработка оператора and
             if (rql.StartsWith("and("))
             {
                 var innerConditions = GetInnerConditions(rql, "and");
@@ -41,7 +32,6 @@ namespace RQL2Expression.Core.Service
                 return Expression.Lambda<Func<Account, bool>>(combinedExpression, parameter);
             }
 
-            // Обработка оператора or
             if (rql.StartsWith("or("))
             {
                 var innerConditions = GetInnerConditions(rql, "or");
@@ -49,7 +39,6 @@ namespace RQL2Expression.Core.Service
                 return Expression.Lambda<Func<Account, bool>>(combinedExpression, parameter);
             }
 
-            // Обработка оператора in
             if (rql.StartsWith("in("))
             {
                 var parts = rql.Split(new[] { '(', ',', ')' }, StringSplitOptions.RemoveEmptyEntries);
@@ -64,19 +53,28 @@ namespace RQL2Expression.Core.Service
                         return a => true;
                     }
 
-                    var property = Expression.Property(parameter, field);
-                    var containsMethod = typeof(Enumerable).GetMethods()
-                        .First(m => m.Name == "Contains" && m.GetParameters().Length == 2)
-                        .MakeGenericMethod(typeof(string));
+                    var property = Expression.Property(parameter, propertyName);
 
-                    var constant = Expression.Constant(values);
-                    var containsExpression = Expression.Call(containsMethod, constant, property);
+                    Expression combinedExpression = null;
+                    foreach (var value in values)
+                    {
+                        var constant = Expression.Constant(Convert.ChangeType(value, property.Type));
+                        var equalExpression = Expression.Equal(property, constant);
 
-                    return Expression.Lambda<Func<Account, bool>>(containsExpression, parameter);
+                        if (combinedExpression == null)
+                        {
+                            combinedExpression = equalExpression;
+                        }
+                        else
+                        {
+                            combinedExpression = Expression.OrElse(combinedExpression, equalExpression);
+                        }
+                    }
+
+                    return Expression.Lambda<Func<Account, bool>>(combinedExpression, parameter);
                 }
             }
 
-            // Обработка оператора eq
             if (rql.StartsWith("eq("))
             {
                 var parts = rql.Split(new[] { '(', ',', ')' }, StringSplitOptions.RemoveEmptyEntries);
@@ -85,7 +83,6 @@ namespace RQL2Expression.Core.Service
                     var field = parts[1];
                     var value = parts[2];
 
-                    // Преобразуем атрибут RQL в имя свойства модели
                     var propertyName = _attributeMapper.MapToPropertyName(field);
                     if (string.IsNullOrEmpty(propertyName))
                     {
@@ -94,35 +91,29 @@ namespace RQL2Expression.Core.Service
 
                     var property = Expression.Property(parameter, propertyName);
 
-                    // Поддержка поиска по маске (например, test*)
                     if (value.Contains("*"))
                     {
-                        var startsWithMethod = typeof(string).GetMethod("StartsWith", new[] { typeof(string) });
-                        var endsWithMethod = typeof(string).GetMethod("EndsWith", new[] { typeof(string) });
-
                         if (value.StartsWith("*") && value.EndsWith("*"))
                         {
-                            // Поиск по подстроке (например, *test*)
                             var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) });
                             var containsExpression = Expression.Call(property, containsMethod, Expression.Constant(value.Trim('*')));
                             return Expression.Lambda<Func<Account, bool>>(containsExpression, parameter);
                         }
                         else if (value.StartsWith("*"))
                         {
-                            // Поиск по окончанию (например, *test)
+                            var endsWithMethod = typeof(string).GetMethod("EndsWith", new[] { typeof(string) });
                             var endsWithExpression = Expression.Call(property, endsWithMethod, Expression.Constant(value.Trim('*')));
                             return Expression.Lambda<Func<Account, bool>>(endsWithExpression, parameter);
                         }
                         else if (value.EndsWith("*"))
                         {
-                            // Поиск по началу (например, test*)
+                            var startsWithMethod = typeof(string).GetMethod("StartsWith", new[] { typeof(string) });
                             var startsWithExpression = Expression.Call(property, startsWithMethod, Expression.Constant(value.Trim('*')));
                             return Expression.Lambda<Func<Account, bool>>(startsWithExpression, parameter);
                         }
                     }
                     else
                     {
-                        // Обычное равенство
                         var constant = Expression.Constant(Convert.ChangeType(value, property.Type));
                         var equalExpression = Expression.Equal(property, constant);
                         return Expression.Lambda<Func<Account, bool>>(equalExpression, parameter);
@@ -130,7 +121,6 @@ namespace RQL2Expression.Core.Service
                 }
             }
 
-            // Если запрос не распознан, возвращаем выражение, которое не фильтрует данные
             return a => true;
         }
 
@@ -182,7 +172,7 @@ namespace RQL2Expression.Core.Service
 
             foreach (var condition in conditions)
             {
-                var conditionExpression = ParseRqlToExpression(condition).Body;
+                var conditionExpression = ParseRqlToExpression(condition, parameter).Body;
 
                 if (combinedExpression == null)
                 {

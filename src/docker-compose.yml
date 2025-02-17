@@ -27,6 +27,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5000:80"
+      - "5001:8081"
     depends_on:
       - db
     environment:

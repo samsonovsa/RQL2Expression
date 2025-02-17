@@ -5,6 +5,6 @@ namespace RQL2Expression.Core.Abstract
 {
     public interface IRqlToExpressionService
     {
-        Expression<Func<Account, bool>> ParseRqlToExpression(string rql);
+        Expression<Func<Account, bool>> ParseRqlToExpression(string rql, ParameterExpression parameter = null);
     }
 }

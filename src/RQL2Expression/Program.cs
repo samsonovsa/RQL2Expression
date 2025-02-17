@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using RQL2Expression.Core.Abstract;
@@ -12,6 +10,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+//.EnableSensitiveDataLogging() // Sensetive ligging
+//.LogTo(Console.WriteLine, LogLevel.Information)); // Log to console
 
 builder.Services.AddSingleton<IRqlAttributeMapper, RqlAttributeMapper>();
 builder.Services.AddSingleton<IRqlToExpressionService, RqlToExpressionService>();
@@ -25,8 +25,8 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Add HealthCheck
-builder.Services.AddHealthChecks();
-    //.AddDbContextCheck<AppDbContext>();
+builder.Services.AddHealthChecks()
+    .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection"));
 
 var app = builder.Build();
 
@@ -46,7 +46,7 @@ app.MapHealthChecks("/hc");
 app.MapGet("/search", async (
     [FromQuery] string rql,
     AppDbContext dbContext,
-    IRqlToExpressionService rqlConverter ) =>
+    IRqlToExpressionService rqlConverter) =>
 {
     if (string.IsNullOrEmpty(rql))
     {
@@ -59,6 +59,7 @@ app.MapGet("/search", async (
     }
 
     var expression = rqlConverter.ParseRqlToExpression(rql);
+
     var accounts = await dbContext.Accounts.Where(expression).ToListAsync();
 
     return Results.Ok(accounts);
