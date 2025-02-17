@@ -121,7 +121,7 @@ namespace RQL2Expression.Core.Service
                 }
             }
 
-            return a => true;
+            return a => false;
         }
 
         /// <summary>
