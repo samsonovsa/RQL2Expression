@@ -10,8 +10,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-//.EnableSensitiveDataLogging() // Sensetive ligging
-//.LogTo(Console.WriteLine, LogLevel.Information)); // Log to console
 
 builder.Services.AddSingleton<IRqlAttributeMapper, RqlAttributeMapper>();
 builder.Services.AddSingleton<IRqlToExpressionService, RqlToExpressionService>();
@@ -30,7 +28,7 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
-// turn on Swagger в development-mode
+// Turn on Swagger in development-mode
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

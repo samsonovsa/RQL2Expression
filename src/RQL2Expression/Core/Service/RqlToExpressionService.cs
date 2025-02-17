@@ -15,10 +15,10 @@ namespace RQL2Expression.Core.Service
         }
 
         /// <summary>
-        /// Преобразует RQL-запрос в дерево выражений для фильтрации Account.
+        /// Transforms an RQL query into an expression tree for filtering Account.
         /// </summary>
-        /// <param name="rql">RQL-запрос.</param>
-        /// <returns>Выражение для фильтрации.</returns>
+        /// <param name="rql">RQL-query.</param>
+        /// <returns>Expression for filtering.</returns>
         public Expression<Func<Account, bool>> ParseRqlToExpression(string rql, ParameterExpression parameter = null)
         {
             parameter = parameter ?? Expression.Parameter(typeof(Account), "a");
@@ -125,7 +125,7 @@ namespace RQL2Expression.Core.Service
         }
 
         /// <summary>
-        /// Метод для получения внутренних условий
+        /// Method for obtaining internal conditions
         /// </summary>
         /// <param name="rql"></param>
         /// <param name="operatorName"></param>
@@ -160,7 +160,7 @@ namespace RQL2Expression.Core.Service
         }
 
         /// <summary>
-        /// Метод для комбинирования условий
+        /// Method for combining conditions
         /// </summary>
         /// <param name="conditions"></param>
         /// <param name="parameter"></param>
@@ -188,7 +188,7 @@ namespace RQL2Expression.Core.Service
         }
 
         /// <summary>
-        /// Метод для получения значения limit
+        /// Method to get limit value
         /// </summary>
         /// <param name="rql"></param>
         /// <returns></returns>
